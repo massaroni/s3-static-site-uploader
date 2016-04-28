@@ -27,7 +27,7 @@ return function ConfigRunner(){
         var s3 = new S3();
         var s3Wrapper = new S3PromiseWrapper(s3);
 
-        var collection = new SyncedFileCollection();
+        var collection = new SyncedFileCollection(config.translateFilePathToS3Key, config.translateS3KeyToLocalPath);
         var globRunner = new GlobRunner(collection);
         var remoteRunner = new RemoteRunner(config.bucketName,collection,s3Wrapper);
 
@@ -52,13 +52,14 @@ return function ConfigRunner(){
                         break;
                     case 'upload':
                         fileUtils.getContents(obj.path).then(function(contents){
-                            console.log('uploading: ' + obj.path);
-                            s3Wrapper.putObject(config.bucketName,obj.path,contents).then(function(){
-                                console.log('done uploading: ' + obj.path);
+                            console.log('uploading: ' + obj.remotePath);
+                            s3Wrapper.putObject(config.bucketName,obj.remotePath,contents).then(function(){
                             },function(reason){
-                                console.log('error uploading: ' + obj.path);
-                                console.log(reason);
+                                console.log('error uploading: ' + obj.remotePath + ': ' + reason);
                             });
+                        })
+                        .catch(function(err){
+                            throw err;
                         });
 
 

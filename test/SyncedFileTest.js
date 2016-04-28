@@ -30,7 +30,7 @@ describe('SyncedFile', function () {
     var file, action;
     beforeEach(function(){
         fileName = './test/testfile.txt';
-        file = new SyncedFile(fileName);
+        file = new SyncedFile(fileName, fileName);
         action = file.action = engine.wrap(file.action);
         file.delete = engine.wrap(file.delete);
         file.upload = engine.wrap(file.upload);
@@ -55,7 +55,7 @@ describe('SyncedFile', function () {
     }
 
     function expectAction(actionType){
-        return expectThen('action',{'action':actionType,path:'./test/testfile.txt'});
+        return expectThen('action',{'action':actionType,path:'./test/testfile.txt',remotePath:'./test/testfile.txt'});
         //return action.then.expect.result.to.equal(actionType);
     }
 

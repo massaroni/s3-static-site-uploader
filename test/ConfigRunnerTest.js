@@ -207,7 +207,7 @@ describe('ConfigRunner', function () {
 
     it('will upload file contents of given path',function(done){
         createConfigRunner();
-        collectionInstance(0).allDoneDefer.resolve([{action:'upload',path:'myUploadPath'}]);
+        collectionInstance(0).allDoneDefer.resolve([{action:'upload',path:'myUploadPath',remotePath:'myUploadPath'}]);
         later()(function(){
             fileUtilsStub.getContents.returnValues[0]._deferred.resolve('myContents');
             later()(function(){
@@ -220,7 +220,7 @@ describe('ConfigRunner', function () {
 
     it('will upload file contents of a different path',function(done){
         createConfigRunner();
-        collectionInstance(0).allDoneDefer.resolve([{action:'upload',path:'myOtherUploadPath'}]);
+        collectionInstance(0).allDoneDefer.resolve([{action:'upload',path:'myOtherUploadPath',remotePath:'myOtherUploadPath'}]);
         later()(function(){
             fileUtilsStub.getContents.returnValues[0]._deferred.resolve('myOtherContents');
             later()(function(){
@@ -233,7 +233,7 @@ describe('ConfigRunner', function () {
 
     it('will upload file contents of multiple paths',function(done){
         createConfigRunner();
-        collectionInstance(0).allDoneDefer.resolve([{action:'upload',path:'myOtherUploadPath'},{action:'upload',path:'myUploadPath'}]);
+        collectionInstance(0).allDoneDefer.resolve([{action:'upload',path:'myOtherUploadPath',remotePath:'myOtherUploadPath'},{action:'upload',path:'myUploadPath',remotePath:'myUploadPath'}]);
         later()(function(){
             //TODO: To brittle - don't rely on execution order
             fileUtilsStub.getContents.returnValues[0]._deferred.resolve('myOtherContents');
@@ -251,8 +251,8 @@ describe('ConfigRunner', function () {
     it('will handle mixed upload / deletes',function(done){
         createConfigRunner();
         collectionInstance(0).allDoneDefer.resolve([
-            {action:'delete',path:'myDeletePath'},
-            {action:'upload',path:'myUploadPath'}
+            {action:'delete',path:'myDeletePath',remotePath:'myDeletePath'},
+            {action:'upload',path:'myUploadPath',remotePath:'myUploadPath'}
         ]);
         later()(function(){
             expect(fileUtilsStub.getContents).to.have.been.calledOnce.and.calledWith('myUploadPath');
