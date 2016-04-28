@@ -17,7 +17,12 @@ return function ConfigRunner(){
 
     this.run = function(){
 
-        config.credentials && AWS.config.loadFromPath(config.credentials);
+        if (typeof(config.credentials) === 'string') {
+            AWS.config.loadFromPath(config.credentials);   
+        }
+        else if (typeof(config.credentials) === 'object') {
+            AWS.config.update(config.credentials);
+        }
 
         var s3 = new S3();
         var s3Wrapper = new S3PromiseWrapper(s3);
