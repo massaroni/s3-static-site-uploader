@@ -2,13 +2,22 @@
 var ConfigRunner = require('../src/ConfigRunner.js');
 var path = require('path');
 
+function getConfigLoader() {
+  var configPath = process.argv[2] || './aws-upload.conf.js';
+  var config = require(path.resolve(configPath));
+
+  if (typeof(config) === 'function') {
+    return config;
+  }
+  return function(callback) {
+    callback(config);
+  };
+}
+
 var runner = new ConfigRunner();
+var loader = getConfigLoader();
 
-
-var configPath = process.argv[2] || './aws-upload.conf.js';
-
-var config = require(path.resolve(configPath));
-
-runner.setConfig(config);
-
-runner.run();
+loader(function(config) {
+  runner.setConfig(config);
+  runner.run();
+});
