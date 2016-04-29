@@ -2,14 +2,6 @@ var S3Stub = require('./../test-lib/S3Stub.js');
 var S3PromiseWrapper = requireCov('../src/S3PromiseWrapper.js');
 var Q = require('q');
 
-engine.use(function(props,handlers){
-    props.addProperty('firstCall',handlers.echoHandler);
-    props.addProperty('callArgWith',handlers.executableEchoHandler);
-
-    props.addProperty('on',handlers.buildHandler({recordExecution:['obj'],playback:function(lastResult,next,ctx){next(this.obj);}}));
-
-})
-
 describe('S3PromiseWrapper', function () {
     var s3, wrapper;
 
