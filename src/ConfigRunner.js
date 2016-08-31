@@ -88,6 +88,10 @@ return function ConfigRunner(){
                         .catch(function(err){
                             throw err;
                         });
+                        break;
+                      case 'nothing':
+                        this.oneActionDone(false, callbackFn);
+                        break;
 
 
                 }
