@@ -12,6 +12,6 @@ var config = require(path.resolve(configPath));
 runner.setConfig(config);
 
 runner.run(function(result) {
-  var exitCode = result.errors > 0 ? 1  0;
+  var exitCode = result.errors > 0 ? 1 : 0;
   process.exit(exitCode);
 });
