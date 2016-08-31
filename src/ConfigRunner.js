@@ -15,7 +15,19 @@ return function ConfigRunner(){
         return this;
     };
 
-    this.run = function(){
+    this.oneActionDone = function(didError, callbackFn) {
+      this.tracking.waiting--;
+      if (didError) {
+        this.tracking.errored++;
+      }
+      if (this.tracking.waiting === 0) {
+        callbackFn({
+          errors: this.tracking.errored
+        });
+      }
+    };
+
+    this.run = function(callbackFn) {
 
         config.credentials && AWS.config.loadFromPath(config.credentials);
 
@@ -39,6 +51,10 @@ return function ConfigRunner(){
 
         collection.allDone.then(function(actions){
             var deletes = [];
+            this.tracking = {
+              waiting: actions.length,
+              errored: 0
+            };
             actions.forEach(function(obj){
                 switch(obj.action){
                     case 'delete':
@@ -50,9 +66,11 @@ return function ConfigRunner(){
                             console.log('uploading: ' + obj.path);
                             s3Wrapper.putObject(config.bucketName,obj.path,contents).then(function(){
                                 console.log('done uploading: ' + obj.path);
+                                this.oneActionDone(false, callbackFn);
                             },function(reason){
                                 console.log('error uploading: ' + obj.path);
                                 console.log(reason);
+                                this.oneActionDone(true, callbackFn);
                             });
                         });
 
@@ -63,9 +81,18 @@ return function ConfigRunner(){
                 console.log('deleting the following: ');
                 deletes.forEach(function(path){console.log('\t' + path)});
                 s3Wrapper.deleteObjects(config.bucketName,deletes).then(
-                    function(){console.log('delete successful')},
-                    function(reason){console.log('delete failed ' + reason); console.log(reason); });
+                    function(){
+                      console.log('delete successful');
+                      this.oneActionDone(false, callbackFn);
+                    },
+                    function(reason){
+                      console.log('delete failed ' + reason);
+                      console.log(reason);
+                      this.oneActionDone(true, callbackFn);
+                    });
             }
+
+
         });
 
     };
