@@ -17,10 +17,22 @@ return function ConfigRunner(){
         return this;
     };
 
-    this.run = function(){
+    this.oneActionDone = function(didError, callbackFn) {
+      this.tracking.waiting--;
+      if (didError) {
+        this.tracking.errored++;
+      }
+      if (this.tracking.waiting === 0) {
+        callbackFn({
+          errors: this.tracking.errored
+        });
+      }
+    };
+
+    this.run = function(callbackFn) {
 
         if (typeof(config.credentials) === 'string') {
-            AWS.config.loadFromPath(config.credentials);   
+            AWS.config.loadFromPath(config.credentials);
         }
         else if (typeof(config.credentials) === 'object') {
             AWS.config.update(config.credentials);
@@ -50,6 +62,10 @@ return function ConfigRunner(){
         collection.allDone.then(function(actions){
             var deletes = [];
             var invalidations = [];
+            this.tracking = {
+              waiting: actions.length,
+              errored: 0
+            };
             actions.forEach(function(obj){
                 switch(obj.action){
                     case 'delete':
@@ -62,8 +78,11 @@ return function ConfigRunner(){
                         fileUtils.getContents(obj.path).then(function(contents){
                             console.log('uploading: ' + obj.remotePath);
                             s3Wrapper.putObject(config.bucketName,obj.remotePath,contents).then(function(){
+                              console.log('done uploading: ' + obj.remotePath);
+                              this.oneActionDone(false, callbackFn);
                             },function(reason){
-                                console.log('error uploading: ' + obj.remotePath + ': ' + reason);
+                              console.log('error uploading: ' + obj.remotePath + ': ' + reason);
+                              this.oneActionDone(true, callbackFn);
                             });
                         })
                         .catch(function(err){
@@ -77,9 +96,18 @@ return function ConfigRunner(){
                 console.log('deleting the following: ');
                 deletes.forEach(function(path){console.log('\t' + path)});
                 s3Wrapper.deleteObjects(config.bucketName,deletes).then(
-                    function(){console.log('delete successful')},
-                    function(reason){console.log('delete failed ' + reason); console.log(reason); });
+                    function(){
+                      console.log('delete successful');
+                      this.oneActionDone(false, callbackFn);
+                    },
+                    function(reason){
+                      console.log('delete failed ' + reason);
+                      console.log(reason);
+                      this.oneActionDone(true, callbackFn);
+                    });
             }
+
+            /* DOESN'T PLAY NICE WITH TRACKING OBJECT
             if(invalidations.length !== 0 && config.cloudFrontDistributionID) {
                 console.log('invalidating the following on cloudfront %s: ', config.cloudFrontDistributionID);
                 invalidations.forEach(function(path){console.log('\t' + path)});
@@ -87,6 +115,9 @@ return function ConfigRunner(){
                     function(){console.log('invalidations started')},
                     function(reason){console.log('invalidations failed ' + reason); console.log(reason); });
             }
+            */
+
+
         });
 
     };
