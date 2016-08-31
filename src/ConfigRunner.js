@@ -58,11 +58,12 @@ return function ConfigRunner(){
 
         remoteRunner.run();
         globRunner.run();
+        var self = this;
 
         collection.allDone.then(function(actions){
             var deletes = [];
             var invalidations = [];
-            this.tracking = {
+            self.tracking = {
               waiting: actions.length,
               errored: 0
             };
@@ -79,10 +80,10 @@ return function ConfigRunner(){
                             console.log('uploading: ' + obj.remotePath);
                             s3Wrapper.putObject(config.bucketName,obj.remotePath,contents).then(function(){
                               console.log('done uploading: ' + obj.remotePath);
-                              this.oneActionDone(false, callbackFn);
+                              self.oneActionDone(false, callbackFn);
                             },function(reason){
                               console.log('error uploading: ' + obj.remotePath + ': ' + reason);
-                              this.oneActionDone(true, callbackFn);
+                              self.oneActionDone(true, callbackFn);
                             });
                         })
                         .catch(function(err){
@@ -90,7 +91,7 @@ return function ConfigRunner(){
                         });
                         break;
                       case 'nothing':
-                        this.oneActionDone(false, callbackFn);
+                        self.oneActionDone(false, callbackFn);
                         break;
 
 
@@ -102,12 +103,12 @@ return function ConfigRunner(){
                 s3Wrapper.deleteObjects(config.bucketName,deletes).then(
                     function(){
                       console.log('delete successful');
-                      this.oneActionDone(false, callbackFn);
+                      self.oneActionDone(false, callbackFn);
                     },
                     function(reason){
                       console.log('delete failed ' + reason);
                       console.log(reason);
-                      this.oneActionDone(true, callbackFn);
+                      self.oneActionDone(true, callbackFn);
                     });
             }
 
