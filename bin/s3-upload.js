@@ -21,6 +21,7 @@ loader(function(config) {
   runner.setConfig(config);
   runner.run(function(result) {
     var exitCode = result.errors > 0 ? 1 : 0;
+    console.log('Number of changes ' + result.changes);
     process.exit(exitCode);
   });
 });

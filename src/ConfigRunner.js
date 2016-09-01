@@ -24,6 +24,7 @@ return function ConfigRunner(){
       }
       if (this.tracking.waiting === 0) {
         callbackFn({
+          changes: this.tracking.changes,
           errors: this.tracking.errored
         });
       }
@@ -65,8 +66,10 @@ return function ConfigRunner(){
             var invalidations = [];
             self.tracking = {
               waiting: actions.length,
+              changes: actions.length,
               errored: 0
             };
+            console.log(actions.length + ' change(s) to resolve');
             actions.forEach(function(obj){
                 switch(obj.action){
                     case 'delete':
@@ -122,6 +125,9 @@ return function ConfigRunner(){
             }
             */
 
+            if (self.tracking.changes === 0) {
+              self.oneActionDone(false, callbackFn);
+            }
 
         });
 
