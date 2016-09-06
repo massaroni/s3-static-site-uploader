@@ -17,12 +17,19 @@ return function ConfigRunner(){
         return this;
     };
 
-    this.oneActionDone = function(didError, callbackFn) {
-      this.tracking.waiting--;
+    this.oneActionDone = function(didError, callbackFn, decrement) {
+      if (!decrement) {
+        decrement = 1;
+      }
+      this.tracking.waiting -= decrement;
       if (didError) {
         this.tracking.errored++;
       }
-      if (this.tracking.waiting === 0) {
+      if (this.tracking.waiting <= 0) {
+        if (this.tracking.hasFiredCallback) {
+          return;
+        }
+        this.tracking.hasFiredCallback = true;
         callbackFn({
           changes: this.tracking.changes,
           errors: this.tracking.errored
@@ -106,12 +113,12 @@ return function ConfigRunner(){
                 s3Wrapper.deleteObjects(config.bucketName,deletes).then(
                     function(){
                       console.log('delete successful');
-                      self.oneActionDone(false, callbackFn);
+                      self.oneActionDone(false, callbackFn, deletes.length);
                     },
                     function(reason){
                       console.log('delete failed ' + reason);
                       console.log(reason);
-                      self.oneActionDone(true, callbackFn);
+                      self.oneActionDone(true, callbackFn, deletes.length);
                     });
             }
 
