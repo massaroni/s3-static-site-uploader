@@ -108,6 +108,11 @@ return function ConfigRunner(){
                 }
             });
             if(deletes.length !== 0) {
+              if (config.skipDeletions === true) {
+                console.log('Config says to skip deletions, so these will be left: ' + deletes.join('\n'));
+                self.oneActionDone(false, callbackFn, deletes.length);
+              }
+              else {
                 console.log('deleting the following: ');
                 deletes.forEach(function(path){console.log('\t' + path)});
                 s3Wrapper.deleteObjects(config.bucketName,deletes).then(
@@ -120,6 +125,7 @@ return function ConfigRunner(){
                       console.log(reason);
                       self.oneActionDone(true, callbackFn, deletes.length);
                     });
+              }
             }
 
             /* DOESN'T PLAY NICE WITH TRACKING OBJECT
