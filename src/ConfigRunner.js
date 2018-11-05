@@ -52,7 +52,7 @@ return function ConfigRunner(){
         var cloudFront = new CloudFront();
         var cloudFrontWrapper = new CloudFrontPromiseWrapper(cloudFront);
 
-        var collection = new SyncedFileCollection(config.translateFilePathToS3Key, config.translateS3KeyToLocalPath);
+        var collection = new SyncedFileCollection(config);
         var globRunner = new GlobRunner(collection);
         var remoteRunner = new RemoteRunner(config.bucketName,collection,s3Wrapper);
 
@@ -88,7 +88,8 @@ return function ConfigRunner(){
                         invalidations.push(obj.remotePath);
                         fileUtils.getContents(obj.path).then(function(contents){
                             console.log('uploading: ' + obj.remotePath);
-                            s3Wrapper.putObject(config.bucketName,obj.remotePath,contents).then(function(){
+                            var metadata = !!config.lookupMetadata ? config.lookupMetadata(obj.remotePath) : null;
+                            s3Wrapper.putObject(config.bucketName,obj.remotePath,contents, null, metadata).then(function(){
                               console.log('done uploading: ' + obj.remotePath);
                               self.oneActionDone(false, callbackFn);
                             },function(reason){

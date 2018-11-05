@@ -2,8 +2,9 @@ function TestHook(fileUtils,Q){
 fileUtils = fileUtils || require( './file-utils.js');
 Q = Q || require('q');
 
-return function SyncedFile (path, remotePath){
+return function SyncedFile (path, remotePath, config){
 
+    config = config || {};
     var del = Q.defer();
     var upload = Q.defer();
     var remoteHash = Q.defer();
@@ -42,7 +43,7 @@ return function SyncedFile (path, remotePath){
         if(exists && remoteHash){
             fileUtils.getContentHash(path).then(
                 function(localHash){
-                    if(localHash === remoteHash){
+                    if (localHash === remoteHash && !config.forceUpload) {
                         resolveUpload(false);
                         resolveAction('nothing');
                     }

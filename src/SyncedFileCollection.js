@@ -1,27 +1,22 @@
 function TestHook(SyncedFile,Q)   {
 SyncedFile = SyncedFile || require('./SyncedFile.js');
 Q = Q || require('q');
+var echo = function (echo) {
+    return echo;
+};
 
-return function SyncedFileCollection(translateFilePathToS3Key, translateS3KeyToLocalPath){
+return function SyncedFileCollection(config) {
 
     var map = {};
     var actions = [];
     
-    if (!translateS3KeyToLocalPath) {
-        translateS3KeyToLocalPath = function(echo) {
-            return echo;
-        };
-    }
-    if (!translateFilePathToS3Key) {
-        translateFilePathToS3Key = function(echo) {
-            return echo;
-        };
-    }
+    var translateS3KeyToLocalPath = config.translateS3KeyToLocalPath || echo;
+    var translateFilePathToS3Key = config.translateFilePathToS3Key || echo;
 
     function get(path, remotePath){
         var obj = map[path];
         if(!obj){
-            obj = map[path] = new SyncedFile(path, remotePath);
+            obj = map[path] = new SyncedFile(path, remotePath, config);
             actions.push(obj.action);
             if(isGlobDone){
                 obj.globDone();
