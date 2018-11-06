@@ -24,16 +24,27 @@ var createParams = {
             Policy:policyString
         };
     },
-    putObject:function(bucketName, key, body, mimeType){
+    putObject:function(bucketName, key, body, mimeType, metadata){
         mimeType = mimeType || mime.lookup(key);
 
         // console.log(body);
-        return {
+        var s3Params = {
             Bucket:bucketName,
             Key: key,
             Body: body,//new Buffer(body),
             ContentType: mimeType
         };
+
+        if (!!metadata) {
+            var cacheControl = metadata['Cache-Control'];
+            if (!!cacheControl) {
+                s3Params.CacheControl = cacheControl;
+                delete metadata['Cache-Control'];
+            }
+            s3Params.Metadata = metadata;
+        }
+
+        return s3Params;
     },
     putBucketWebsite:function(bucketName,index,error) {
         var params = {

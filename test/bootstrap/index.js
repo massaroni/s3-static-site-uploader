@@ -27,6 +27,12 @@ global.requireCov = function(path){
     return require(path);
 };
 
+engine.use(function(props,handlers){
+    props.addProperty('firstCall',handlers.echoHandler);
+    props.addProperty('callArgWith',handlers.executableEchoHandler);
+    props.addProperty('on',handlers.buildHandler({recordExecution:['obj'],playback:function(lastResult,next,ctx){next(this.obj);}}));
+});
+
 function after(time,result){
     var deferred = Q.defer();
 

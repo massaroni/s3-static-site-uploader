@@ -2,13 +2,14 @@ var GlobRunnerStub = require('../test-lib/GlobRunnerStub.js');
 var RemoteRunnerStub = require('../test-lib/RemoteRunnerStub.js');
 var SyncedFileCollectionStub = require('../test-lib/SyncedFileCollectionStub.js');
 var S3PromiseWrapperStub = require('../test-lib/S3PromiseWrapperStub.js');
+var CloudFrontPromiseWrapperStub = require('../test-lib/CloudFrontPromiseWrapperStub.js');
 var fileUtilsStub = require('../test-lib/file-utils-stub.js');
 var AWSStub = require('../test-lib/AWSStub.js');
 var S3Stub = AWSStub.S3;
 
 
 var ConfigRunner = requireCov('../src/ConfigRunner.js').TestHook(
-    GlobRunnerStub,RemoteRunnerStub,SyncedFileCollectionStub,S3PromiseWrapperStub,AWSStub,fileUtilsStub
+    GlobRunnerStub,RemoteRunnerStub,SyncedFileCollectionStub,S3PromiseWrapperStub,AWSStub,fileUtilsStub,CloudFrontPromiseWrapperStub
 );
 
 
@@ -17,14 +18,18 @@ var remoteRunInstance = RemoteRunnerStub.instance;
 var collectionInstance = SyncedFileCollectionStub.instance;
 var s3Instance = S3Stub.instance;
 var s3WrapperInstance = S3PromiseWrapperStub.instance;
+var cloudFrontWrapperInstance = CloudFrontPromiseWrapperStub.instance;
 
 describe('ConfigRunner', function () {
+    var cloudFrontDistributionID = '12345';
+
     afterEach(function(){
         GlobRunnerStub.reset();
         RemoteRunnerStub.reset();
         SyncedFileCollectionStub.reset();
         AWSStub.reset();
         S3PromiseWrapperStub.reset();
+        CloudFrontPromiseWrapperStub.reset();
         fileUtilsStub.restore();
     });
 
@@ -37,7 +42,7 @@ describe('ConfigRunner', function () {
         else {
             patterns = Array.prototype.slice.call(arguments,2);
         }
-        return {bucketName:bucketName,credentials:credentials,patterns:patterns};
+        return {bucketName:bucketName,credentials:credentials,patterns:patterns,cloudFrontDistributionID:cloudFrontDistributionID};
     }
 
     function createConfigRunner(bucketName,credentials,patterns){
@@ -129,7 +134,7 @@ describe('ConfigRunner', function () {
 
     it('will call deleteObjects on s3Wrapper with appropriate bucket',function(done){
         createConfigRunner();
-        collectionInstance(0).allDoneDefer.resolve([{action:'delete',path:'myDeletePath'}]);
+        collectionInstance(0).allDoneDefer.resolve([{action:'delete',path:'myDeletePath',remotePath:'myDeletePath'}]);
         later()(function(){
             expect(s3WrapperInstance(0).deleteObjects)
                 .to.have.been.calledOnce
@@ -139,7 +144,7 @@ describe('ConfigRunner', function () {
 
     it('will call deleteObjects on s3Wrapper with some other bucket',function(done){
         createConfigRunner('myOtherBucket');
-        collectionInstance(0).allDoneDefer.resolve([{action:'delete',path:'myDeletePath'}]);
+        collectionInstance(0).allDoneDefer.resolve([{action:'delete',path:'myDeletePath',remotePath:'myDeletePath'}]);
         later()(function(){
             expect(s3WrapperInstance(0).deleteObjects)
                 .to.have.been.calledOnce
@@ -149,7 +154,7 @@ describe('ConfigRunner', function () {
 
     it('will call deleteObjects on s3Wrapper with appropriate path',function(done){
         createConfigRunner();
-        collectionInstance(0).allDoneDefer.resolve([{action:'delete',path:'myDeletePath'}]);
+        collectionInstance(0).allDoneDefer.resolve([{action:'delete',path:'myDeletePath',remotePath:'myDeletePath'}]);
         later()(function(){
             expect(s3WrapperInstance(0).deleteObjects)
                 .to.have.been.calledOnce
@@ -159,7 +164,7 @@ describe('ConfigRunner', function () {
 
     it('will call deleteObjects on s3Wrapper with a different path',function(done){
         createConfigRunner();
-        collectionInstance(0).allDoneDefer.resolve([{action:'delete',path:'myOtherDeletePath'}]);
+        collectionInstance(0).allDoneDefer.resolve([{action:'delete',path:'myOtherDeletePath',remotePath:'myOtherDeletePath'}]);
         later()(function(){
             expect(s3WrapperInstance(0).deleteObjects)
                 .to.have.been.calledOnce
@@ -169,7 +174,7 @@ describe('ConfigRunner', function () {
 
     it('will call deleteObjects on s3Wrapper with multiple delete paths',function(done){
         createConfigRunner();
-        collectionInstance(0).allDoneDefer.resolve([{action:'delete',path:'myDeletePath'},{action:'delete',path:'myOtherDeletePath'}]);
+        collectionInstance(0).allDoneDefer.resolve([{action:'delete',path:'myDeletePath',remotePath:'myDeletePath'},{action:'delete',path:'myOtherDeletePath',remotePath:'myOtherDeletePath'}]);
         later()(function(){
             expect(s3WrapperInstance(0).deleteObjects)
                 .to.have.been.calledOnce
@@ -207,7 +212,7 @@ describe('ConfigRunner', function () {
 
     it('will upload file contents of given path',function(done){
         createConfigRunner();
-        collectionInstance(0).allDoneDefer.resolve([{action:'upload',path:'myUploadPath'}]);
+        collectionInstance(0).allDoneDefer.resolve([{action:'upload',path:'myUploadPath',remotePath:'myUploadPath'}]);
         later()(function(){
             fileUtilsStub.getContents.returnValues[0]._deferred.resolve('myContents');
             later()(function(){
@@ -220,7 +225,7 @@ describe('ConfigRunner', function () {
 
     it('will upload file contents of a different path',function(done){
         createConfigRunner();
-        collectionInstance(0).allDoneDefer.resolve([{action:'upload',path:'myOtherUploadPath'}]);
+        collectionInstance(0).allDoneDefer.resolve([{action:'upload',path:'myOtherUploadPath',remotePath:'myOtherUploadPath'}]);
         later()(function(){
             fileUtilsStub.getContents.returnValues[0]._deferred.resolve('myOtherContents');
             later()(function(){
@@ -233,7 +238,7 @@ describe('ConfigRunner', function () {
 
     it('will upload file contents of multiple paths',function(done){
         createConfigRunner();
-        collectionInstance(0).allDoneDefer.resolve([{action:'upload',path:'myOtherUploadPath'},{action:'upload',path:'myUploadPath'}]);
+        collectionInstance(0).allDoneDefer.resolve([{action:'upload',path:'myOtherUploadPath',remotePath:'myOtherUploadPath'},{action:'upload',path:'myUploadPath',remotePath:'myUploadPath'}]);
         later()(function(){
             //TODO: To brittle - don't rely on execution order
             fileUtilsStub.getContents.returnValues[0]._deferred.resolve('myOtherContents');
@@ -251,8 +256,8 @@ describe('ConfigRunner', function () {
     it('will handle mixed upload / deletes',function(done){
         createConfigRunner();
         collectionInstance(0).allDoneDefer.resolve([
-            {action:'delete',path:'myDeletePath'},
-            {action:'upload',path:'myUploadPath'}
+            {action:'delete',path:'myDeletePath',remotePath:'myDeletePath'},
+            {action:'upload',path:'myUploadPath',remotePath:'myUploadPath'}
         ]);
         later()(function(){
             expect(fileUtilsStub.getContents).to.have.been.calledOnce.and.calledWith('myUploadPath');
@@ -280,5 +285,16 @@ describe('ConfigRunner', function () {
             expect(s3WrapperInstance(0).deleteObjects).not.to.have.been.called;
         }).then.notify(done);
 
+    });
+
+    // NOT CURRENTLY ENABLED BECAUSE NOT WORKING
+    xit('will call doCreateInvalidation on cloudFrontWrapper with appropriate paths',function(done){
+        createConfigRunner();
+        collectionInstance(0).allDoneDefer.resolve([{action:'delete',path:'myDeletePath',remotePath:'myDeletePath'}]);
+        later()(function(){
+            expect(cloudFrontWrapperInstance(0).doCreateInvalidation)
+                .to.have.been.calledOnce
+                .and.calledWith(cloudFrontDistributionID, ['myDeletePath']);
+        }).then.notify(done);
     });
 });
